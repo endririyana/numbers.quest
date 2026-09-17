@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NUMBERS QUEST: THE ARENA OF NUMBERS</title>
+    <!-- Google Fonts & Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Orbitron:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "arena-bg": "#0B0F19",
+              "arena-card": "#161F33",
+              "arena-border": "#2A3859",
+              "electric-blue": "#00F0FF",
+              "neon-purple": "#A855F7",
+              "neon-magenta": "#FF007A",
+              "neon-orange": "#FF7A00",
+              "neon-yellow": "#FFD600",
+              "emerald-glow": "#10B981",
+            },
+            fontFamily: {
+              orbitron: ["Orbitron", "sans-serif"],
+              sans: ["Plus Jakarta Sans", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+        },
+      };
+    </script>
+    <script
+      id="MathJax-script"
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+
+    <style>
+      body {
+        background-color: #0b0f19;
+        color: #f3f4f6;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        overflow-x: hidden;
+      }
+      .glow-text {
+        text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+      }
+      .glow-box {
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+      }
+      .glow-box-cyan {
+        box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+      }
+      .glass-card {
+        background: rgba(22, 31, 51, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(42, 56, 89, 0.8);
+      }
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        20%,
+        60% {
+          transform: translateX(-8px);
+        }
+        40%,
+        80% {
+          transform: translateX(8px);
+        }
+      }
+      .animate-shake {
+        animation: shake 0.4s ease-in-out;
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen flex flex-col justify-between selection:bg-electric-blue selection:text-black"
+  >
+    <!-- TOP HEADER / HUD (Hidden on Welcome Screen) -->
+    <header
+      id="hud"
+      class="hidden sticky top-0 z-50 glass-card px-4 py-3 border-b border-arena-border"
+    >
+      <div
+        class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3"
+      >
+        <div class="flex items-center gap-3">
+          <span
+            class="font-orbitron font-extrabold text-lg text-electric-blue tracking-wider"
+            >THE ARENA OF NUMBERS</span
+          >
+          <span
+            id="hud-user"
+            class="text-xs px-2 py-1 bg-arena-border rounded-md text-gray-300 font-semibold"
+            >Guest</span
+          >
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="flex items-center gap-4 text-xs md:text-sm font-bold">
+          <div class="flex items-center gap-1 text-neon-yellow">
+            <span>⚡ XP:</span>
+            <span id="hud-xp" class="font-orbitron text-base">0</span>
+          </div>
+          <div class="flex items-center gap-1 text-electric-blue">
+            <span>🔥 Streak:</span>
+            <span id="hud-streak" class="font-orbitron text-base">0</span>
+          </div>
+          <div class="flex items-center gap-1 text-emerald-glow">
+            <span>🎯 Acc:</span>
+            <span id="hud-acc" class="font-orbitron text-base">100%</span>
+          </div>
+        </div>
+
+        <!-- Sound Toggle & Dashboard Link -->
+        <div class="flex items-center gap-2">
+          <button
+            onclick="toggleAudio()"
+            id="sound-btn"
+            class="px-2.5 py-1 bg-arena-border hover:bg-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+          >
+            🔊 <span id="sound-status">ON</span>
+          </button>
+          <button
+            onclick="openTeacherDashboard()"
+            class="px-2.5 py-1 bg-neon-purple/20 border border-neon-purple/50 text-neon-purple hover:bg-neon-purple hover:text-white rounded-lg text-xs font-semibold transition"
+          >
+            👑 Teacher Panel
+          </button>
+        </div>
+      </div>
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-800 h-1.5 mt-2 rounded-full overflow-hidden">
+        <div
+          id="hud-progress"
+          class="bg-gradient-to-r from-electric-blue via-neon-purple to-neon-magenta h-full w-0 transition-all duration-500"
+        ></div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow flex items-center justify-center p-4">
+      <div class="w-full max-w-4xl">
+        <!-- 1. LANDING / OPENING SCREEN -->
+        <section id="screen-welcome" class="text-center py-8">
+          <div
+            class="inline-block p-2 px-4 bg-neon-purple/20 border border-neon-purple/40 rounded-full text-neon-purple text-xs font-bold tracking-widest uppercase mb-4 animate-pulse"
+          >
+            🎮 Interactive Math Arena
+          </div>
+          <h1
+            class="font-orbitron text-4xl md:text-6xl font-black tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-electric-blue via-neon-purple to-neon-magenta glow-text"
+          >
+            NUMBERS QUEST
+          </h1>
+          <h2
+            class="font-orbitron text-lg md:text-2xl text-gray-300 font-bold mb-6 tracking-wide"
+          >
+            THE ARENA OF NUMBERS
+          </h2>
+          <p
+            class="text-gray-400 max-w-lg mx-auto text-sm md:text-base mb-8 italic"
+          >
+            “Master the Numbers. Conquer the Universe.”
+          </p>
+          <button
+            onclick="
+              playSFX('click');
+              goToScreen('screen-identity');
+            "
+            class="px-8 py-4 bg-gradient-to-r from-electric-blue to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-orbitron font-black text-lg rounded-2xl shadow-lg glow-box-cyan transform hover:-translate-y-1 transition duration-200"
+          >
+            ▶️ START QUEST
+          </button>
+        </section>
+
+        <!-- 2. STUDENT IDENTITY FORM -->
+        <section id="screen-identity" class="hidden">
+          <div
+            class="glass-card rounded-3xl p-6 md:p-8 max-w-md mx-auto shadow-2xl"
+          >
+            <h3
+              class="font-orbitron text-2xl font-bold text-electric-blue text-center mb-6"
+            >
+              PLAYER IDENTITY
+            </h3>
+            <form
+              id="identity-form"
+              onsubmit="submitIdentity(event)"
+              class="space-y-4"
+            >
+              <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1"
+                  >Nama Lengkap *</label
+                >
+                <input
+                  type="text"
+                  id="input-nama"
+                  required
+                  placeholder="Contoh: Alex Pratama"
+                  class="w-full px-4 py-3 bg-arena-bg border border-arena-border rounded-xl text-white focus:outline-none focus:border-electric-blue transition"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-300 mb-1"
+                    >Kelas *</label
+                  >
+                  <input
+                    type="text"
+                    id="input-kelas"
+                    required
+                    placeholder="XI MIPA 1"
+                    class="w-full px-4 py-3 bg-arena-bg border border-arena-border rounded-xl text-white focus:outline-none focus:border-electric-blue transition"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-300 mb-1"
+                    >No. Absen *</label
+                  >
+                  <input
+                    type="number"
+                    id="input-absen"
+                    required
+                    placeholder="05"
+                    class="w-full px-4 py-3 bg-arena-bg border border-arena-border rounded-xl text-white focus:outline-none focus:border-electric-blue transition"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                class="w-full py-3.5 bg-gradient-to-r from-neon-purple to-neon-magenta hover:from-purple-500 hover:to-pink-500 text-white font-orbitron font-bold rounded-xl shadow-lg transition duration-200 mt-2"
+              >
+                ENTER ARENA 🚀
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 3. MISSION HUB / QUESTION ARENA -->
+        <section id="screen-arena" class="hidden">
+          <div class="glass-card rounded-3xl p-6 md:p-8 shadow-2xl">
+            <!-- Mission Header -->
+            <div
+              class="flex flex-wrap items-center justify-between border-b border-arena-border pb-4 mb-6 gap-2"
+            >
+              <div>
+                <span
+                  id="mission-tag"
+                  class="text-xs font-bold text-electric-blue uppercase tracking-wider"
+                  >MISSION 1</span
+                >
+                <h3
+                  id="mission-title"
+                  class="font-orbitron text-xl font-bold text-white"
+                >
+                  NUMBERS RECALL
+                </h3>
+              </div>
+              <div
+                id="difficulty-badge"
+                class="hidden px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-gray-800 text-gray-300 border border-gray-700"
+              >
+                NORMAL
+              </div>
+            </div>
+
+            <!-- Question Container -->
+            <div id="question-box" class="space-y-6">
+              <div
+                id="question-text"
+                class="text-base md:text-lg font-semibold text-gray-100 leading-relaxed"
+              >
+                Loading question...
+              </div>
+
+              <!-- Visual Area (For diagrams/math rendering) -->
+              <div
+                id="question-visual"
+                class="hidden bg-arena-bg/60 border border-arena-border p-4 rounded-2xl text-center"
+              ></div>
+
+              <!-- Options / Answer Buttons -->
+              <div
+                id="options-container"
+                class="grid grid-cols-1 md:grid-cols-2 gap-3"
+              >
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- Feedback Banner -->
+            <div
+              id="feedback-box"
+              class="hidden mt-6 p-4 rounded-2xl border transition-all duration-300"
+            >
+              <div
+                id="feedback-title"
+                class="font-orbitron font-bold text-sm mb-1"
+              ></div>
+              <div
+                id="feedback-text"
+                class="text-xs md:text-sm text-gray-200"
+              ></div>
+              <button
+                id="next-btn"
+                onclick="nextQuestion()"
+                class="mt-3 px-5 py-2 bg-electric-blue text-black font-orbitron font-bold text-xs rounded-lg hover:bg-cyan-300 transition"
+              >
+                CONTINUE ▶
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. CHECKPOINT / BREAK SCREEN -->
+        <section id="screen-checkpoint" class="hidden text-center py-6">
+          <div
+            class="glass-card rounded-3xl p-8 max-w-lg mx-auto shadow-2xl border border-electric-blue/40"
+          >
+            <div class="text-4xl mb-2">🏁</div>
+            <h2
+              class="font-orbitron text-2xl font-extrabold text-electric-blue mb-2"
+            >
+              CHECKPOINT REACHED!
+            </h2>
+            <p class="text-xs text-gray-300 mb-6">
+              Kemajuan belajar Anda telah dicatat secara otomatis.
+            </p>
+
+            <div
+              class="grid grid-cols-3 gap-3 bg-arena-bg p-4 rounded-2xl mb-6 border border-arena-border"
+            >
+              <div>
+                <div class="text-xs text-gray-400">Total XP</div>
+                <div
+                  id="cp-xp"
+                  class="font-orbitron text-xl font-bold text-neon-yellow"
+                >
+                  0
+                </div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-400">Akurasi</div>
+                <div
+                  id="cp-acc"
+                  class="font-orbitron text-xl font-bold text-emerald-glow"
+                >
+                  0%
+                </div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-400">Soal Selesai</div>
+                <div
+                  id="cp-count"
+                  class="font-orbitron text-xl font-bold text-electric-blue"
+                >
+                  0
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button
+                onclick="continueQuestFromCP()"
+                class="flex-1 py-3.5 bg-electric-blue hover:bg-cyan-300 text-black font-orbitron font-bold text-sm rounded-xl transition"
+              >
+                SAVE & CONTINUE ▶
+              </button>
+              <button
+                onclick="enterBreakMode()"
+                class="px-5 py-3.5 bg-arena-border hover:bg-gray-700 text-gray-300 font-orbitron font-bold text-sm rounded-xl transition"
+              >
+                ☕ BREAK MODE
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. BREAK MODE SCREEN -->
+        <section id="screen-break" class="hidden text-center py-10">
+          <div class="glass-card rounded-3xl p-8 max-w-md mx-auto shadow-2xl">
+            <div class="text-5xl mb-4">☕</div>
+            <h2 class="font-orbitron text-2xl font-bold text-neon-yellow mb-2">
+              BREAK TIME
+            </h2>
+            <p class="text-sm text-gray-300 mb-6">
+              Istirahatlah sejenak. Kemajuan Anda di arena tersimpan dengan
+              aman.
+            </p>
+            <button
+              onclick="continueQuestFromCP()"
+              class="px-8 py-3.5 bg-gradient-to-r from-electric-blue to-neon-purple text-black font-orbitron font-bold text-sm rounded-xl hover:opacity-90 transition glow-box-cyan"
+            >
+              ▶️ CONTINUE QUEST
+            </button>
+          </div>
+        </section>
+
+        <!-- 6. FINAL RESULT / RANK SCREEN -->
+        <section id="screen-final" class="hidden text-center py-6">
+          <div
+            class="glass-card rounded-3xl p-8 max-w-xl mx-auto shadow-2xl border border-neon-purple/50"
+          >
+            <div class="text-5xl mb-2">🎉</div>
+            <h2
+              class="font-orbitron text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-electric-blue via-neon-purple to-neon-magenta mb-1"
+            >
+              QUEST COMPLETE!
+            </h2>
+            <p class="text-xs text-gray-400 mb-6">
+              Anda telah menyelesaikan seluruh tantangan The Arena of Numbers!
+            </p>
+
+            <!-- Rank Card -->
+            <div
+              class="bg-gradient-to-br from-arena-bg to-arena-card p-6 rounded-2xl border border-neon-purple/40 mb-6 relative overflow-hidden"
+            >
+              <div
+                class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1"
+              >
+                Peringkat Capaian
+              </div>
+              <div
+                id="final-rank"
+                class="font-orbitron text-2xl md:text-3xl font-black text-neon-yellow glow-text my-2"
+              >
+                NUMBERS MASTER
+              </div>
+              <div id="final-badge" class="text-4xl my-2">🏆</div>
+              <div
+                id="final-user-info"
+                class="text-xs text-gray-300 font-semibold"
+              >
+                Nama (Kelas)
+              </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div
+              class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-arena-bg p-4 rounded-2xl mb-6 border border-arena-border text-center"
+            >
+              <div>
+                <div class="text-[10px] text-gray-400 uppercase">Total XP</div>
+                <div
+                  id="final-xp"
+                  class="font-orbitron text-lg font-bold text-neon-yellow"
+                >
+                  0
+                </div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400 uppercase">Akurasi</div>
+                <div
+                  id="final-acc"
+                  class="font-orbitron text-lg font-bold text-emerald-glow"
+                >
+                  0%
+                </div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400 uppercase">
+                  Jawaban Benar
+                </div>
+                <div
+                  id="final-correct"
+                  class="font-orbitron text-lg font-bold text-electric-blue"
+                >
+                  0/0
+                </div>
+              </div>
+              <div>
+                <div class="text-[10px] text-gray-400 uppercase">
+                  Waktu Selesai
+                </div>
+                <div
+                  id="final-time"
+                  class="font-orbitron text-lg font-bold text-neon-magenta"
+                >
+                  00:00
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button
+                onclick="restartGame()"
+                class="flex-1 py-3 bg-arena-border hover:bg-gray-700 text-white font-orbitron font-bold text-xs rounded-xl transition"
+              >
+                🔄 RESTART ARENA
+              </button>
+              <button
+                onclick="openTeacherDashboard()"
+                class="flex-1 py-3 bg-neon-purple hover:bg-purple-600 text-white font-orbitron font-bold text-xs rounded-xl transition"
+              >
+                👑 LEADERBOARD
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. TEACHER DASHBOARD MODAL/SCREEN -->
+        <section id="screen-dashboard" class="hidden">
+          <div class="glass-card rounded-3xl p-6 md:p-8 shadow-2xl">
+            <div
+              class="flex items-center justify-between border-b border-arena-border pb-4 mb-6"
+            >
+              <div>
+                <h3 class="font-orbitron text-xl font-bold text-electric-blue">
+                  👑 TEACHER DASHBOARD
+                </h3>
+                <p class="text-xs text-gray-400">
+                  Ringkasan hasil belajar & analisis learning gap siswa
+                </p>
+              </div>
+              <button
+                onclick="closeTeacherDashboard()"
+                class="px-3 py-1.5 bg-arena-border hover:bg-gray-700 text-gray-300 text-xs font-bold rounded-lg transition"
+              >
+                ✖ Tutup
+              </button>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div
+                class="bg-arena-bg p-4 rounded-xl border border-arena-border"
+              >
+                <div class="text-xs text-gray-400">Total Siswa</div>
+                <div
+                  id="dash-total-siswa"
+                  class="font-orbitron text-2xl font-bold text-electric-blue"
+                >
+                  0
+                </div>
+              </div>
+              <div
+                class="bg-arena-bg p-4 rounded-xl border border-arena-border"
+              >
+                <div class="text-xs text-gray-400">Rata-Rata XP</div>
+                <div
+                  id="dash-avg-xp"
+                  class="font-orbitron text-2xl font-bold text-neon-yellow"
+                >
+                  0
+                </div>
+              </div>
+              <div
+                class="bg-arena-bg p-4 rounded-xl border border-arena-border"
+              >
+                <div class="text-xs text-gray-400">Rata-Rata Akurasi</div>
+                <div
+                  id="dash-avg-acc"
+                  class="font-orbitron text-2xl font-bold text-emerald-glow"
+                >
+                  0%
+                </div>
+              </div>
+              <div
+                class="bg-arena-bg p-4 rounded-xl border border-arena-border"
+              >
+                <div class="text-xs text-gray-400">Top Learner</div>
+                <div
+                  id="dash-top-score"
+                  class="font-orbitron text-lg font-bold text-neon-magenta truncate"
+                >
+                  -
+                </div>
+              </div>
+            </div>
+
+            <!-- Leaderboard Table -->
+            <h4 class="font-orbitron text-sm font-bold text-gray-200 mb-3">
+              🏆 LEADERBOARD SISWA
+            </h4>
+            <div
+              class="overflow-x-auto bg-arena-bg rounded-xl border border-arena-border mb-6"
+            >
+              <table class="w-full text-left text-xs text-gray-300">
+                <thead
+                  class="bg-arena-card text-gray-400 font-orbitron uppercase border-b border-arena-border"
+                >
+                  <tr>
+                    <th class="p-3">#</th>
+                    <th class="p-3">Nama</th>
+                    <th class="p-3">Kelas</th>
+                    <th class="p-3">XP</th>
+                    <th class="p-3">Akurasi</th>
+                    <th class="p-3">Rank</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                  <tr>
+                    <td colspan="6" class="p-4 text-center text-gray-500">
+                      Belum ada data tersimpan.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer
+      class="text-center py-4 text-xs text-gray-500 border-t border-arena-border/40"
+    >
+      NUMBERS QUEST: THE ARENA OF NUMBERS &copy; 2026 — Matematika SMP Kelas VII
+    </footer>
+
+    <!-- GAME ENGINE SCRIPT -->
+    <script>
+      /* ==========================================================================
+           1. CONFIG & GLOBAL STATE
+           ========================================================================== */
+      // Sediakan URL Google Apps Script Web App Anda di bawah ini jika terhubung ke Google Sheets
+      const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9-CBDcvclbQstgI4sKfdinWGfwdqD6ebiiLQfiN-9xfhn4MKb6YRfR4bV0P-q-z6N/exec";
+
+      let soundEnabled = true;
+
+      let player = {
+        nama: "",
+        kelas: "",
+        absen: "",
+        xp: 0,
+        streak: 0,
+        totalCorrect: 0,
+        totalAnswered: 0,
+        startTime: null,
+      };
+
+      let currentMissionIdx = 0; // 0: M1, 1: M2, 2: M3, 3: M4, 4: Boss Battle
+      let currentQuestionIdx = 0;
+      let activeQuestions = [];
+      let timerInterval = null;
+      let timeLeft = 0;
+
+      /* ==========================================================================
+           2. QUESTION BANK (30 Questions across Bloom's Taxonomy C2-C5)
+           ========================================================================== */
+      const QUESTION_BANK = {
+        // MISSION 1: NUMBERS RECALL (5 Questions - C2)
+        m1: [
+          {
+            id: "m1_1",
+            text: "Manakah di antara pilihan berikut yang secara tepat mendefinisikan **Bilangan Asli** ($\mathbb{N}$)?",
+            options: [
+              "Himpunan bilangan bulat dimulai dari 0 (0, 1, 2, 3, ...)",
+              "Himpunan bilangan positif yang digunakan untuk membilang dimulai dari 1 (1, 2, 3, ...)",
+              "Himpunan bilangan yang meliputi pecahan dan desimal negatif",
+              "Himpunan bilangan rasional dan irasional",
+            ],
+            correct: 1,
+            feedback:
+              "Bilangan asli adalah bilangan bulat positif yang dimulai dari angka 1, 2, 3, dan seterusnya.",
+          },
+          {
+            id: "m1_2",
+            text: "Apakah angka **0** termasuk ke dalam himpunan bilangan asli?",
+            options: [
+              "Ya, 0 adalah bilangan asli terkecil",
+              "Bukan, 0 adalah bilangan nol/cacah, tetapi bukan bilangan asli",
+              "Ya, karena 0 bersifat netral",
+              "Bukan, 0 adalah bilangan irasional",
+            ],
+            correct: 1,
+            feedback:
+              "Bilangan asli dimulai dari 1. Angka 0 termasuk bilangan cacah/bulat, tetapi bukan bilangan asli.",
+          },
+          {
+            id: "m1_3",
+            text: "Bilangan yang dapat dinyatakan dalam bentuk $\\frac{a}{b}$ dengan $a, b \\in \\mathbb{Z}$ dan $b \\neq 0$ disebut...",
+            options: [
+              "Bilangan Irasional",
+              "Bilangan Rasional",
+              "Bilangan Asli",
+              "Bilangan Kompleks",
+            ],
+            correct: 1,
+            feedback:
+              "Definisi matematis bilangan rasional adalah bilangan yang dapat dituliskan sebagai pecahan $\\frac{a}{b}$ dengan penyebut $b \\neq 0$.",
+          },
+          {
+            id: "m1_4",
+            text: "Manakah contoh bilangan di bawah ini yang tergolong **Bilangan Irasional**?",
+            options: ["$\\frac{3}{4}$", "$0,333...$", "$\\sqrt{2}$", "$-15$"],
+            correct: 2,
+            feedback:
+              "$\\sqrt{2} \\approx 1,4142135...$ desimalnya tidak berulang dan tidak terbatas, sehingga merupakan bilangan irasional.",
+          },
+          {
+            id: "m1_5",
+            text: "Penggabungan antara himpunan bilangan rasional dan bilangan irasional membentuk himpunan...",
+            options: [
+              "Bilangan Real ($\mathbb{R}$)",
+              "Bilangan Bulat ($\mathbb{Z}$)",
+              "Bilangan Cacah",
+              "Bilangan Asli ($\mathbb{N}$)",
+            ],
+            correct: 0,
+            feedback:
+              "Bilangan Real (nyata) mencakup seluruh bilangan rasional maupun irasional.",
+          },
+        ],
+
+        // MISSION 2: NUMBERS DETECTIVE (5 Questions - C3 Classification)
+        m2: [
+          {
+            id: "m2_1",
+            text: "Detektif! Klasifikasikan bilangan **$-12$** ke dalam kategori yang paling tepat:",
+            options: [
+              "Bilangan Asli",
+              "Bilangan Bulat",
+              "Bilangan Irasional",
+              "Bilangan Nol",
+            ],
+            correct: 1,
+            feedback:
+              "$-12$ adalah bilangan bulat negatif. Ini bukan bilangan asli karena bernilai negatif.",
+          },
+          {
+            id: "m2_2",
+            text: "Analisalah bilangan **$\\sqrt{9}$**. Masuk ke dalam kelompok manakah bilangan tersebut?",
+            options: [
+              "Bilangan Irasional",
+              "Bilangan Rasional & Bulat",
+              "Bilangan Kompleks imajiner",
+              "Bukan termasuk bilangan real",
+            ],
+            correct: 1,
+            feedback:
+              "Ingat! $\\sqrt{9} = 3$. Angka 3 adalah bilangan asli, bulat, dan rasional ($\\frac{3}{1}$).",
+          },
+          {
+            id: "m2_3",
+            text: "Bagaimana status klasifikasi dari bilangan konstanta matematika **$\\pi$ (pi)**?",
+            options: [
+              "Bilangan Rasional karena bernilai tetap $\\frac{22}{7}$",
+              "Bilangan Irasional karena bentuk desimalnya tidak pernah berhenti dan tak berulang",
+              "Bilangan Bulat Positif",
+              "Bilangan Asli",
+            ],
+            correct: 1,
+            feedback:
+              "$\\pi = 3,14159265...$ desimal tak terbatas & tak berulang. $\\frac{22}{7}$ hanyalah pendekatan rasional.",
+          },
+          {
+            id: "m2_4",
+            text: "Tentukan jenis bilangan dari bentuk desimal berulang **$0,252525...$**:",
+            options: [
+              "Bilangan Irasional",
+              "Bilangan Rasional",
+              "Bilangan Bulat",
+              "Bilangan Asli",
+            ],
+            correct: 1,
+            feedback:
+              "Desimal berulang dapat diubah menjadi pecahan rasional (Contoh: $0,2525... = \\frac{25}{99}$).",
+          },
+          {
+            id: "m2_5",
+            text: "Manakah di antara bilangan berikut yang **BUKAN** merupakan bilangan rasional?",
+            options: ["$-0,5$", "$\\frac{7}{3}$", "$\\sqrt{5}$", "$0$"],
+            correct: 2,
+            feedback:
+              "$\\sqrt{5}$ tidak dapat dinyatakan dalam pecahan bulat sederhana, maka tergolong irasional.",
+          },
+        ],
+
+        // MISSION 3: NUMBER OPERATIONS 1 (5 Questions - C3 Procedural Operations)
+        m3: [
+          {
+            id: "m3_1",
+            text: "Hitunglah hasil dari operasi campuran bilangan bulat berikut: **$-31 + 14 - (-10)$**",
+            options: ["$-7$", "$-27$", "$7$", "$-35$"],
+            correct: 0,
+            feedback:
+              "$-31 + 14 = -17$. Kemudian $-17 - (-10) = -17 + 10 = -7$.",
+          },
+          {
+            id: "m3_2",
+            text: "Selesaikan hasil operasi perkalian dan pembagian: **$(-12) \\times 5 : (-3)$**",
+            options: ["$-20$", "$20$", "$-15$", "$15$"],
+            correct: 1,
+            feedback:
+              "($-12 \\times 5) = -60$. Lalu $-60 : (-3) = 20$ (Negatif dibagi negatif menghasilkan positif).",
+          },
+          {
+            id: "m3_3",
+            text: "Hitunglah operasi campuran dengan pecahan rasional: **$\\frac{3}{4} - \\frac{1}{2} + \\frac{1}{5}$**",
+            options: [
+              "$\\frac{9}{20}$",
+              "$\\frac{3}{20}$",
+              "$\\frac{7}{20}$",
+              "$\\frac{1}{20}$",
+            ],
+            correct: 0,
+            feedback:
+              "KPK penyebut (4, 2, 5) = 20. Disamakan: $\\frac{15}{20} - \\frac{10}{20} + \\frac{4}{20} = \\frac{9}{20}$.",
+          },
+          {
+            id: "m3_4",
+            text: "Hasil dari **$(-2)^3 + 5 \\times (-4)$** adalah...",
+            options: ["$-28$", "$-12$", "$12$", "$-20$"],
+            correct: 0,
+            feedback:
+              "$(-2)^3 = -8$. Lalu $5 \\times (-4) = -20$. Maka $-8 + (-20) = -28$.",
+          },
+          {
+            id: "m3_5",
+            text: "Berapakah nilai dari **$15 : (-3) + 4 \\times (-2)$**?",
+            options: ["$-13$", "$13$", "$-3$", "$3$"],
+            correct: 0,
+            feedback:
+              "Dahulukan pembagian & perkalian: $15:(-3) = -5$, dan $4 \\times (-2) = -8$. Hasil $-5 + (-8) = -13$.",
+          },
+        ],
+
+        // MISSION 4: NUMBER OPERATIONS 2 (5 Questions - C4 Analysis & Word Problems)
+        m4: [
+          {
+            id: "m4_1",
+            text: "Suhu awal di dalam ruang pendingin laboratorium adalah **$-5^\\circ\\text{C}$**. Ketika mesin pendingin dimatikan, suhu naik **$3^\\circ\\text{C}$** setiap 10 menit. Berapakah suhu ruangan tersebut setelah **30 menit**?",
+            options: [
+              "$4^\\circ\\text{C}$",
+              "$14^\\circ\\text{C}$",
+              "$-4^\\circ\\text{C}$",
+              "$9^\\circ\\text{C}$",
+            ],
+            correct: 0,
+            feedback:
+              "Kenaikan suhu 30 menit = $(30/10) \\times 3^\\circ\\text{C} = 9^\\circ\\text{C}$. Suhu akhir = $-5^\\circ\\text{C} + 9^\\circ\\text{C} = 4^\\circ\\text{C}$.",
+          },
+          {
+            id: "m4_2",
+            text: "Seorang kapal selam berada pada kedalaman **120 meter di bawah permukaan laut** ($-120\\text{ m}$). Kapal tersebut naik 45 meter, lalu menyelam kembali sejauh 30 meter. Di manakah kedalaman posisi kapal selam sekarang?",
+            options: [
+              "$-105\\text{ meter}$",
+              "$-135\\text{ meter}$",
+              "$-195\\text{ meter}$",
+              "$-45\\text{ meter}$",
+            ],
+            correct: 0,
+            feedback:
+              "Posisi = $-120 + 45 - 30 = -105\\text{ meter}$ (105 meter di bawah permukaan laut).",
+          },
+          {
+            id: "m4_3",
+            text: "Ibu membeli $3\\frac{1}{2}\\text{ kg}$ gula pasir. Sebanyak $\\frac{3}{4}\\text{ kg}$ digunakan untuk membuat kue. Kemudian Ibu membeli lagi $1\\frac{1}{2}\\text{ kg}$. Berapa total persediaan gula pasir Ibu sekarang?",
+            options: [
+              "$4\\frac{1}{4}\\text{ kg}$",
+              "$4\\frac{1}{2}\\text{ kg}$",
+              "$3\\frac{3}{4}\\text{ kg}$",
+              "$5\\text{ kg}$",
+            ],
+            correct: 0,
+            feedback:
+              "$3.5 - 0.75 + 1.5 = 4.25\\text{ kg} = 4\\frac{1}{4}\\text{ kg}$.",
+          },
+          {
+            id: "m4_4",
+            text: "Dalam kompetisi matematika arena, setiap jawaban benar diberi skor $+4$, salah diberi skor $-2$, dan tidak dijawab $-1$. Dari 25 soal, Rian menjawab benar 18 soal, tidak dijawab 2 soal, dan sisanya salah. Berapa total skor Rian?",
+            options: ["60", "58", "62", "66"],
+            correct: 0,
+            feedback:
+              "Benar = $18 \\times 4 = 72$. Tidak dijawab = $2 \\times (-1) = -2$. Salah = $(25-18-2) \\times (-2) = 5 \\times (-2) = -10$. Total = $72 - 2 - 10 = 60$.",
+          },
+          {
+            id: "m4_5",
+            text: "Ketinggian kota A adalah **$250\\text{ mdpl}$**, sedangkan lembah B berada pada ketinggian **$-35\\text{ mdpl}$**. Berapakah beda/selisih ketinggian antara kota A dan lembah B?",
+            options: [
+              "$215\\text{ meter}$",
+              "$285\\text{ meter}$",
+              "$-285\\text{ meter}$",
+              "$250\\text{ meter}$",
+            ],
+            correct: 1,
+            feedback:
+              "Selisih ketinggian = $250 - (-35) = 250 + 35 = 285\\text{ meter}$.",
+          },
+        ],
+
+        // MISSION 5: BOSS BATTLE ARENA (10 Questions - C4-C5 Mixed with Timers)
+        boss: [
+          {
+            id: "b_1",
+            diff: "NORMAL",
+            time: 45,
+            xp: 150,
+            text: "[BOSS BATTLE] Di antara himpunan bilangan berikut, manakah yang **tertutup** terhadap operasi pengurangan (hasil pengurangan dua anggotanya selalu menghasilkan anggota himpunan itu sendiri)?",
+            options: [
+              "Himpunan Bilangan Asli ($\mathbb{N}$)",
+              "Himpunan Bilangan Bulat ($\mathbb{Z}$)",
+              "Himpunan Bilangan Ganjil",
+              "Himpunan Bilangan Prima",
+            ],
+            correct: 1,
+            feedback:
+              "Pengurangan dua bilangan bulat pasti menghasilkan bilangan bulat. Namun pada bilangan asli, $2 - 5 = -3$ (bukan bilangan asli).",
+          },
+          {
+            id: "b_2",
+            diff: "NORMAL",
+            time: 45,
+            xp: 150,
+            text: "[BOSS BATTLE] Nilai dari $\\sqrt{0,04}$ tergolong ke dalam kelompok bilangan...",
+            options: [
+              "Irasional",
+              "Rasional karena sama dengan 0,2",
+              "Bulat Negatif",
+              "Imajiner",
+            ],
+            correct: 1,
+            feedback:
+              "$\\sqrt{0,04} = 0,2 = \\frac{2}{10} = \\frac{1}{5}$, sehingga bernilai rasional.",
+          },
+          {
+            id: "b_3",
+            diff: "HARD",
+            time: 40,
+            xp: 200,
+            text: "[BOSS BATTLE] Jika $a = -2, b = 3, c = -1$, berapakah nilai dari operasi $\\frac{a^2 - 2bc}{a + b}$?",
+            options: ["$10$", "$-2$", "$8$", "$-10$"],
+            correct: 0,
+            feedback:
+              "$a^2 = (-2)^2 = 4$. $2bc = 2(3)(-1) = -6$. Pembilang = $4 - (-6) = 10$. Penyebut = $-2 + 3 = 1$. Maka $10 / 1 = 10$.",
+          },
+          {
+            id: "b_4",
+            diff: "HARD",
+            time: 40,
+            xp: 200,
+            text: "[BOSS BATTLE] Manakah pernyataan matematis berikut yang **BENAR**?",
+            options: [
+              "Setiap bilangan rasional adalah bilangan bulat",
+              "Setiap bilangan bulat adalah bilangan rasional",
+              "Setiap bilangan real adalah bilangan irasional",
+              "Bilangan nol adalah bilangan irasional",
+            ],
+            correct: 1,
+            feedback:
+              "Setiap bilangan bulat $n$ dapat ditulis sebagai pecahan $\\frac{n}{1}$, sehingga otomatis termasuk bilangan rasional.",
+          },
+          {
+            id: "b_5",
+            diff: "EXTREME",
+            time: 30,
+            xp: 300,
+            text: "[BOSS BATTLE EXTREME] Jika $x = 0,333...$ dan $y = 0,666...$, tentukan hasil dari $x + y$ serta jenis bilangannya!",
+            options: [
+              "$0,999...$ (Bilangan Irasional)",
+              "$1$ (Bilangan Asli & Rasional)",
+              "$0,98$ (Bilangan Bulat)",
+              "$\\frac{8}{9}$ (Bilangan Pecahan)",
+            ],
+            correct: 1,
+            feedback:
+              "$x = \\frac{1}{3}$ dan $y = \\frac{2}{3}$. Nilai $x + y = \\frac{1}{3} + \\frac{2}{3} = 1$, yang merupakan bilangan asli dan rasional.",
+          },
+          {
+            id: "b_6",
+            diff: "HARD",
+            time: 40,
+            xp: 200,
+            text: "[BOSS BATTLE] Urutkan bilangan berikut dari yang terkecil: $-0,8;\\ \\frac{1}{2};\\ -1,2;\\ 0;\\ \\sqrt{2}$",
+            options: [
+              "$-1,2;\\ -0,8;\\ 0;\\ \\frac{1}{2};\\ \\sqrt{2}$",
+              "$-0,8;\\ -1,2;\\ 0;\\ \\frac{1}{2};\\ \\sqrt{2}$",
+              "$\\sqrt{2};\\ \\frac{1}{2};\\ 0;\\ -0,8;\\ -1,2$",
+              "$-1,2;\\ -0,8;\\ 0;\\ \\sqrt{2};\\ \\frac{1}{2}$",
+            ],
+            correct: 0,
+            feedback: "$-1,2 < -0,8 < 0 < 0,5 (1/2) < 1,414... (\\sqrt{2})$.",
+          },
+          {
+            id: "b_7",
+            diff: "EXTREME",
+            time: 30,
+            xp: 300,
+            text: "[BOSS BATTLE EXTREME] Hasil hitung dari $1 - 2 + 3 - 4 + 5 - 6 + ... + 99 - 100$ adalah...",
+            options: ["$-50$", "$50$", "$-100$", "$0$"],
+            correct: 0,
+            feedback:
+              "Terdapat 50 pasang bilangan $(1-2) + (3-4) + ... + (99-100)$. Tiap pasang bernilai $-1$. Maka $50 \\times (-1) = -50$.",
+          },
+          {
+            id: "b_8",
+            diff: "NORMAL",
+            time: 45,
+            xp: 150,
+            text: '[BOSS BATTLE] Manakah bentuk yang mewakili penyelesaian masalah: "Suhu udara turun $2^\\circ\\text{C}$ setiap jam selama 5 jam dari suhu awal $10^\\circ\\text{C}$"?',
+            options: [
+              "$10 - (5 \\times 2) = 0^\\circ\\text{C}$",
+              "$10 + (5 \\times (-2)) = 0^\\circ\\text{C}$",
+              "Kedua pilihan kalimat di atas bernilai ekivalen dan benar",
+              "Tidak ada yang benar",
+            ],
+            correct: 2,
+            feedback:
+              "Pengurangan $5 \\times 2$ setara dengan penjumlahan $5 \\times (-2)$. Keduanya menghasilkan $0^\\circ\\text{C}$.",
+          },
+          {
+            id: "b_9",
+            diff: "HARD",
+            time: 40,
+            xp: 200,
+            text: "[BOSS BATTLE] Manakah di antara bilangan berikut yang bernilai paling dekat dengan angka **$1$**?",
+            options: [
+              "$\\frac{9}{10}$",
+              "$1,05$",
+              "$\\sqrt{1,1}$",
+              "$\\frac{11}{10}$",
+            ],
+            correct: 2,
+            feedback:
+              "$\\frac{9}{10}=0,9$ (jarak 0,1). $1,05$ (jarak 0,05). $\\sqrt{1,1} \\approx 1,0488$ (jarak ~0,0488). Maka $\\sqrt{1,1}$ paling dekat.",
+          },
+          {
+            id: "b_10",
+            diff: "EXTREME",
+            time: 30,
+            xp: 300,
+            text: "[BOSS BATTLE EXTREME] Sebuah pecahan $\\frac{a}{b}$ dikatakan rasional sederhana. Jika $a$ dan $b$ keduanya dilipatgandakan menjadi $2a$ dan $2b$, maka nilai pecahan tersebut akan...",
+            options: [
+              "Menjadi 2 kali lebih besar",
+              "Menjadi 4 kali lebih besar",
+              "Tetap sama (senilai)",
+              "Menjadi setengahnya",
+            ],
+            correct: 2,
+            feedback:
+              "$\\frac{2a}{2b} = \\frac{a}{b}$. Sifat penyederhanaan pecahan rasional.",
+          },
+        ],
+      };
+
+      const MISSION_METADATA = [
+        { key: "m1", tag: "MISSION 1", title: "NUMBERS RECALL" },
+        { key: "m2", tag: "MISSION 2", title: "NUMBERS DETECTIVE" },
+        { key: "m3", tag: "MISSION 3", title: "NUMBER OPERATIONS 1" },
+        { key: "m4", tag: "MISSION 4", title: "NUMBER OPERATIONS 2" },
+        { key: "boss", tag: "BOSS BATTLE", title: "⚔️ THE ARENA OF NUMBERS" },
+      ];
+
+      /* ==========================================================================
+           3. AUDIO SYNTHESIZER (Web Audio API - Without External Assets)
+           ========================================================================== */
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      function playSFX(type) {
+        if (!soundEnabled) return;
+        if (audioCtx.state === "suspended") audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === "click") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === "correct") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+          osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === "wrong") {
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(160, now + 0.1);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      }
+
+      function toggleAudio() {
+        soundEnabled = !soundEnabled;
+        document.getElementById("sound-status").innerText = soundEnabled
+          ? "ON"
+          : "OFF";
+      }
+
+      /* ==========================================================================
+           4. NAVIGATION & SCREEN CONTROLLER
+           ========================================================================== */
+      function goToScreen(screenId) {
+        const screens = [
+          "screen-welcome",
+          "screen-identity",
+          "screen-arena",
+          "screen-checkpoint",
+          "screen-break",
+          "screen-final",
+          "screen-dashboard",
+        ];
+        screens.forEach((s) => {
+          document.getElementById(s).classList.add("hidden");
+        });
+        document.getElementById(screenId).classList.remove("hidden");
+
+        const hud = document.getElementById("hud");
+        if (screenId === "screen-welcome" || screenId === "screen-identity") {
+          hud.classList.add("hidden");
+        } else {
+          hud.classList.remove("hidden");
+        }
+      }
+
+      /* ==========================================================================
+           5. GAME LOGIC & QUEST ENGINE
+           ========================================================================== */
+      function submitIdentity(e) {
+        e.preventDefault();
+        playSFX("click");
+
+        player.nama = document.getElementById("input-nama").value.trim();
+        player.kelas = document.getElementById("input-kelas").value.trim();
+        player.absen = document.getElementById("input-absen").value.trim();
+        player.startTime = new Date();
+
+        document.getElementById("hud-user").innerText =
+          `${player.nama} (${player.kelas})`;
+
+        currentMissionIdx = 0;
+        startMission(currentMissionIdx);
+      }
+
+      function startMission(missionIdx) {
+        currentMissionIdx = missionIdx;
+        currentQuestionIdx = 0;
+
+        const meta = MISSION_METADATA[currentMissionIdx];
+        document.getElementById("mission-tag").innerText = meta.tag;
+        document.getElementById("mission-title").innerText = meta.title;
+
+        // Load and shuffle questions
+        activeQuestions = [...QUESTION_BANK[meta.key]];
+        shuffleArray(activeQuestions);
+
+        goToScreen("screen-arena");
+        loadQuestion();
+      }
+
+      function loadQuestion() {
+        clearInterval(timerInterval);
+        const q = activeQuestions[currentQuestionIdx];
+
+        // Update UI & Progress
+        updateHUD();
+
+        // Set Difficulty Badge for Boss Battle
+        const diffBadge = document.getElementById("difficulty-badge");
+        if (q.diff) {
+          diffBadge.innerText = `${q.diff} | ⏱️ ${q.time}s`;
+          diffBadge.classList.remove("hidden");
+        } else {
+          diffBadge.classList.add("hidden");
+        }
+
+        // Question Text
+        document.getElementById("question-text").innerHTML =
+          `${currentQuestionIdx + 1}. ${q.text}`;
+
+        // Render Options
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+
+        let indexedOpts = q.options.map((opt, i) => ({ text: opt, idx: i }));
+        shuffleArray(indexedOpts);
+
+        indexedOpts.forEach((optObj) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "p-4 bg-arena-bg border border-arena-border hover:border-electric-blue text-left rounded-xl text-xs md:text-sm font-semibold transition text-gray-200 hover:text-white flex items-center justify-between group";
+          btn.innerHTML = `<span>${optObj.text}</span> <span class="text-gray-500 group-hover:text-electric-blue">👉</span>`;
+          btn.onclick = () => selectAnswer(optObj.idx, btn);
+          container.appendChild(btn);
+        });
+
+        // Hide Feedback
+        document.getElementById("feedback-box").classList.add("hidden");
+
+        // Timer Start if available
+        if (q.time) {
+          timeLeft = q.time;
+          timerInterval = setInterval(() => {
+            timeLeft--;
+            diffBadge.innerText = `${q.diff} | ⏱️ ${timeLeft}s`;
+            if (timeLeft <= 0) {
+              clearInterval(timerInterval);
+              selectAnswer(-1, null); // Timeout
+            }
+          }, 1000);
+        }
+
+        if (window.MathJax) {
+          MathJax.typesetPromise();
+        }
+      }
+
+      function selectAnswer(selectedIdx, btnElem) {
+        clearInterval(timerInterval);
+        const q = activeQuestions[currentQuestionIdx];
+        const isCorrect = selectedIdx === q.correct;
+
+        // Disable all option buttons
+        const container = document.getElementById("options-container");
+        Array.from(container.children).forEach((b) => {
+          b.disabled = true;
+          b.classList.add("opacity-50", "cursor-not-allowed");
+        });
+
+        player.totalAnswered++;
+
+        let earnedXP = q.xp || 100;
+
+        if (isCorrect) {
+          playSFX("correct");
+          player.totalCorrect++;
+          player.streak++;
+
+          // Bonus Streak XP
+          if (player.streak >= 3) earnedXP += 50;
+
+          player.xp += earnedXP;
+
+          if (btnElem) {
+            btnElem.classList.remove(
+              "bg-arena-bg",
+              "border-arena-border",
+              "opacity-50",
+            );
+            btnElem.classList.add(
+              "bg-emerald-glow/20",
+              "border-emerald-glow",
+              "text-emerald-glow",
+            );
+          }
+        } else {
+          playSFX("wrong");
+          player.streak = 0;
+          player.xp = Math.max(0, player.xp - 10);
+
+          if (btnElem) {
+            btnElem.classList.remove(
+              "bg-arena-bg",
+              "border-arena-border",
+              "opacity-50",
+            );
+            btnElem.classList.add(
+              "bg-neon-magenta/20",
+              "border-neon-magenta",
+              "text-neon-magenta",
+              "animate-shake",
+            );
+          }
+        }
+
+        updateHUD();
+        showFeedback(isCorrect, q.feedback, earnedXP);
+      }
+
+      function showFeedback(isCorrect, text, xp) {
+        const fbBox = document.getElementById("feedback-box");
+        const fbTitle = document.getElementById("feedback-title");
+        const fbText = document.getElementById("feedback-text");
+
+        fbBox.classList.remove(
+          "hidden",
+          "bg-emerald-glow/10",
+          "border-emerald-glow",
+          "bg-neon-magenta/10",
+          "border-neon-magenta",
+        );
+
+        if (isCorrect) {
+          fbBox.classList.add("bg-emerald-glow/10", "border-emerald-glow");
+          fbTitle.className =
+            "font-orbitron font-bold text-sm text-emerald-glow mb-1";
+          fbTitle.innerText = `✅ TEPAT SEKALI! (+${xp} XP)`;
+        } else {
+          fbBox.classList.add("bg-neon-magenta/10", "border-neon-magenta");
+          fbTitle.className =
+            "font-orbitron font-bold text-sm text-neon-magenta mb-1";
+          fbTitle.innerText = `❌ KURANG TEPAT!`;
+        }
+
+        fbText.innerText = text;
+
+        if (window.MathJax) {
+          MathJax.typesetPromise();
+        }
+      }
+
+      function nextQuestion() {
+        currentQuestionIdx++;
+        if (currentQuestionIdx < activeQuestions.length) {
+          loadQuestion();
+        } else {
+          // End of Mission
+          handleMissionComplete();
+        }
+      }
+
+      function handleMissionComplete() {
+        const currentMissionNum = currentMissionIdx + 1;
+
+        if (currentMissionNum === 2 || currentMissionNum === 4) {
+          // Trigger Checkpoint
+          saveToGoogleSheets(`Checkpoint Mission ${currentMissionNum}`);
+          showCheckpoint();
+        } else if (currentMissionNum >= 5) {
+          // Final Results
+          finishQuest();
+        } else {
+          // Proceed to Next Mission
+          startMission(currentMissionIdx + 1);
+        }
+      }
+
+      /* ==========================================================================
+           6. CHECKPOINT & BREAK MODE
+           ========================================================================== */
+      function showCheckpoint() {
+        document.getElementById("cp-xp").innerText = player.xp;
+        document.getElementById("cp-acc").innerText = getAccuracy() + "%";
+        document.getElementById("cp-count").innerText =
+          `${player.totalAnswered}/30`;
+
+        goToScreen("screen-checkpoint");
+      }
+
+      function continueQuestFromCP() {
+        startMission(currentMissionIdx + 1);
+      }
+
+      function enterBreakMode() {
+        goToScreen("screen-break");
+      }
+
+      /* ==========================================================================
+           7. FINAL RESULTS & LEADERBOARD
+           ========================================================================== */
+      function finishQuest() {
+        const endTime = new Date();
+        const totalSecs = Math.round((endTime - player.startTime) / 1000);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        const timeStr = `${mins}m ${secs}s`;
+
+        const rank = calculateRank(player.xp);
+
+        document.getElementById("final-user-info").innerText =
+          `${player.nama} | Kelas ${player.kelas} (Absen ${player.absen})`;
+        document.getElementById("final-xp").innerText = player.xp;
+        document.getElementById("final-acc").innerText = getAccuracy() + "%";
+        document.getElementById("final-correct").innerText =
+          `${player.totalCorrect}/30`;
+        document.getElementById("final-time").innerText = timeStr;
+        document.getElementById("final-rank").innerText = rank.title;
+        document.getElementById("final-badge").innerText = rank.badge;
+
+        // Trigger Confetti
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+        saveToGoogleSheets("FINAL_RESULT");
+        goToScreen("screen-final");
+      }
+
+      function calculateRank(xp) {
+        if (xp >= 3000) return { title: "NUMBERS MASTER", badge: "👑" };
+        if (xp >= 2000) return { title: "NUMBERS EXPERT", badge: "🥇" };
+        if (xp >= 1000) return { title: "NUMBERS CHALLENGER", badge: "🥈" };
+        return { title: "NUMBERS INITIATE", badge: "🥉" };
+      }
+
+      function restartGame() {
+        player.xp = 0;
+        player.streak = 0;
+        player.totalCorrect = 0;
+        player.totalAnswered = 0;
+        goToScreen("screen-welcome");
+      }
+
+      /* ==========================================================================
+           8. HELPERS & UTILS
+           ========================================================================== */
+      function getAccuracy() {
+        if (player.totalAnswered === 0) return 100;
+        return Math.round((player.totalCorrect / player.totalAnswered) * 100);
+      }
+
+      function updateHUD() {
+        document.getElementById("hud-xp").innerText = player.xp;
+        document.getElementById("hud-streak").innerText = player.streak;
+        document.getElementById("hud-acc").innerText = getAccuracy() + "%";
+
+        const totalQuestionsOverall = 30;
+        const progress = Math.min(
+          100,
+          Math.round((player.totalAnswered / totalQuestionsOverall) * 100),
+        );
+        document.getElementById("hud-progress").style.width = progress + "%";
+      }
+
+      function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+
+      /* ==========================================================================
+           9. LOCAL STORAGE & TEACHER DASHBOARD
+           ========================================================================== */
+      function saveToGoogleSheets(checkpointLabel) {
+        const entry = {
+          nama: player.nama,
+          kelas: player.kelas,
+          xp: player.xp,
+          accuracy: getAccuracy() + "%",
+          rank: calculateRank(player.xp).title,
+          timestamp: new Date().toLocaleTimeString(),
+        };
+
+        let leaderboard = JSON.parse(
+          localStorage.getItem("nq_leaderboard") || "[]",
+        );
+        leaderboard.push(entry);
+        localStorage.setItem("nq_leaderboard", JSON.stringify(leaderboard));
+
+        if (GOOGLE_SCRIPT_URL) {
+          fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...entry, checkpoint: checkpointLabel }),
+          }).catch((e) => console.log("Google Sheets sync skipped:", e));
+        }
+      }
+
+      function openTeacherDashboard() {
+        playSFX("click");
+        const data = JSON.parse(localStorage.getItem("nq_leaderboard") || "[]");
+        data.sort((a, b) => b.xp - a.xp);
+
+        const tbody = document.getElementById("leaderboard-body");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Belum ada data tersimpan.</td></tr>`;
+        } else {
+          let totalXP = 0;
+          data.forEach((row, i) => {
+            totalXP += row.xp;
+            const tr = document.createElement("tr");
+            tr.className =
+              "border-b border-arena-border/50 hover:bg-arena-card/50 transition";
+            tr.innerHTML = `
+                        <td class="p-3 font-orbitron text-electric-blue">#${i + 1}</td>
+                        <td class="p-3 font-bold text-white">${row.nama}</td>
+                        <td class="p-3 text-gray-400">${row.kelas}</td>
+                        <td class="p-3 font-orbitron text-neon-yellow font-bold">${row.xp}</td>
+                        <td class="p-3 text-emerald-glow">${row.accuracy}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 bg-neon-purple/20 text-neon-purple rounded text-[10px] font-bold">${row.rank}</span></td>
+                    `;
+            tbody.appendChild(tr);
+          });
+
+          document.getElementById("dash-total-siswa").innerText = data.length;
+          document.getElementById("dash-avg-xp").innerText = Math.round(
+            totalXP / data.length,
+          );
+          document.getElementById("dash-avg-acc").innerText = data[0].accuracy;
+          document.getElementById("dash-top-score").innerText =
+            `${data[0].nama} (${data[0].xp} XP)`;
+        }
+
+        goToScreen("screen-dashboard");
+      }
+
+      function closeTeacherDashboard() {
+        playSFX("click");
+        if (player.nama) {
+          goToScreen("screen-arena");
+        } else {
+          goToScreen("screen-welcome");
+        }
+      }
+    </script>
+  </body>
+</html>
